@@ -1,0 +1,30 @@
+@startuml c4-contenedores
+!include <C4/C4_Container>
+LAYOUT_TOP_DOWN()
+title RetroScape - Diagrama de contenedores (C4, nivel 2)
+
+Person(usuario, "Participante", "Miembro, Scrum Master, Product Owner o Agile Coach")
+
+Boundary(retro, "RetroScape", "sistema") {
+  Container(pwa, "PWA", "TypeScript, Vite", "Interfaz del paisaje, comentarios, análisis y votación. Funciona en laptop y celular.")
+  Container(sw, "Service Worker", "Workbox", "Caché de la interfaz y de la ayuda para carga rápida y sin conexión.")
+  ContainerDb(perfil, "Perfil local", "IndexedDB", "Preferencias, ritmo, tiempo de espera del dictado y emociones confirmadas. Sin cuenta.")
+  Container(gateway, "LLM Gateway", "Supabase Edge Function, TypeScript", "Capa de abstracción: adaptadores Gemini, OpenAI y simulado. Mantiene las claves fuera del navegador.")
+  ContainerDb(db, "Base de datos", "PostgreSQL (Supabase)", "Salas, colocaciones, comentarios anónimos, votos, misiones, ideas congeladas e historial de sprints.")
+  Container(realtime, "Canal en tiempo real", "Supabase Realtime", "Difunde eventos de la sala en 1 s o menos.")
+}
+
+System_Ext(llm, "Proveedor de LLM", "Gemini u OpenAI")
+System_Ext(voz, "Web Speech API", "Reconocimiento y síntesis de voz del navegador")
+
+Rel(usuario, pwa, "Usa", "HTTPS")
+Rel(pwa, sw, "Carga desde caché")
+Rel(pwa, perfil, "Lee y actualiza el perfil")
+Rel(pwa, voz, "Dicta y escucha")
+Rel(pwa, db, "Lee y escribe el estado de la sala", "HTTPS")
+Rel(pwa, realtime, "Se suscribe a la sala", "WebSocket")
+Rel(realtime, db, "Escucha cambios")
+Rel(pwa, gateway, "Pide el análisis", "HTTPS / JSON")
+Rel(gateway, db, "Lee comentarios anónimos")
+Rel(gateway, llm, "Envía texto anonimizado", "HTTPS")
+@enduml

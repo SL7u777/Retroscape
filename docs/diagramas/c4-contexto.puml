@@ -1,0 +1,22 @@
+@startuml c4-contexto
+!include <C4/C4_Context>
+LAYOUT_TOP_DOWN()
+title RetroScape - Diagrama de contexto (C4, nivel 1)
+
+Person(miembro, "Miembro del equipo", "Coloca su avatar, comenta por voz o texto y vota acciones. Incluye usuarios con discapacidad visual, del habla y neurodivergentes.")
+Person(sm, "Scrum Master", "Crea la sala, revisa el análisis del LLM y modera las fases.")
+Person(po, "Product Owner / Agile Coach", "Consulta misiones adoptadas y la evolución entre sprints.")
+
+System(retro, "RetroScape", "PWA para retrospectivas ágiles con paisaje emocional compartido, comentarios anónimos, análisis con LLM y votación con fichas.")
+
+System_Ext(llm, "Proveedor de LLM", "Gemini u OpenAI. Agrupa comentarios por temas, propone acciones e infiere emociones.")
+System_Ext(voz, "Servicios de voz del navegador", "Web Speech API (reconocimiento) y SpeechSynthesis (lectura en voz alta).")
+System_Ext(rt, "Supabase", "Base de datos PostgreSQL y canal en tiempo real para las salas.")
+
+Rel(miembro, retro, "Participa en la retrospectiva", "HTTPS")
+Rel(sm, retro, "Facilita la sesión", "HTTPS")
+Rel(po, retro, "Consulta resultados", "HTTPS")
+Rel(retro, llm, "Envía texto anonimizado", "HTTPS / JSON")
+Rel(retro, voz, "Transcribe y lee en voz alta")
+Rel(retro, rt, "Guarda y sincroniza el estado de la sala", "WebSocket")
+@enduml

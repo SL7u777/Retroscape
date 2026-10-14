@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2D3138">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<title>RetroScape Prototipo</title>
+<meta name="description" content="Simulación navegable de fidelidad media de RetroScape (CC451, UNI)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --bg: #F7F8FA; --white: #FFFFFF; --surf: #F1F3F5; --line: #DDE1E6; --line2: #C4C9D0;
+  --mute: #6B7280; --text: #1F2329; --acc: #3B5BDB; --acc-soft: #E7ECFD;
+  --warn: #B54708; --warn-soft: #FEF3E7; --ok: #2B7A4B; --ok-soft: #E6F4EC;
+  --dark: #2D3138; --gold: #8A6A00; --gold-soft: #FFF6D6;
+  --z1: #F5F7F9; --z2: #E9ECF0; --z3: #DCDFE4;
+  --tool: #22262C; --tool-fg: #E8EAED; --tool-mute: #A0A6AE;
+  --font: "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --base: 16px;
+}
+html.hc { --mute: #3D434B; --line: #8C939C; --line2: #6B7280; --text: #000000; --z1: #FFFFFF; --z2: #E3E6EA; --z3: #C9CDD3; }
+html.rm *, html.rm *::before, html.rm *::after { animation: none !important; transition: none !important; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+html { font-size: var(--base); }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 0.875rem; }
+* { box-sizing: border-box; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--acc); outline-offset: 2px; }
+
+.sim { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 8px 16px; background: var(--tool); color: var(--tool-fg); font-size: 0.8125rem; }
+.sim b { font-weight: 600; }
+.sim label { color: var(--tool-mute); }
+.sim select { font: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid #4A5059; background: #2E333A; color: var(--tool-fg); max-width: 100%; }
+.sim .sp { flex: 1; }
+.sim button { background: transparent; border: 1px solid #4A5059; border-radius: 6px; padding: 4px 10px; cursor: pointer; color: var(--tool-fg); }
+html.shot .sim { display: none; }
+
+.stage { display: flex; justify-content: center; padding-block: 24px; padding-inline: 16px; }
+html.shot .stage { padding: 0; }
+.app { width: 100%; max-width: 1280px; min-height: 800px; background: var(--bg); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+html.shot .app { border: 0; border-radius: 0; height: 800px; }
+.app.mobile { max-width: 390px; min-height: 844px; }
+html.shot .app.mobile { height: 844px; }
+
+.hdr { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; padding: 8px 32px; background: var(--white); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.logo { width: 28px; height: 28px; border-radius: 8px; background: var(--dark); }
+.brand strong { font-size: 1.125rem; font-weight: 700; }
+.sala { padding: 6px 12px; border-radius: 999px; background: var(--surf); color: var(--mute); font-size: 0.8125rem; font-weight: 500; }
+.hacts { display: flex; gap: 12px; align-items: center; }
+.ib { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border: 1px solid var(--line2); border-radius: 8px; background: var(--white); font-size: 0.8125rem; font-weight: 500; cursor: pointer; }
+.ib.sq { padding: 7px; }
+.steps { display: flex; align-items: center; gap: 10px; padding: 12px 48px; background: var(--white); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.step { display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; color: var(--mute); }
+.step .d { width: 24px; height: 24px; border-radius: 999px; border: 1px solid var(--line2); display: grid; place-items: center; font-size: 0.75rem; font-weight: 600; background: var(--white); }
+.step.done { color: var(--text); } .step.done .d { background: var(--dark); border-color: var(--dark); color: var(--white); }
+.step.on { color: var(--text); font-weight: 600; } .step.on .d { background: var(--acc); border-color: var(--acc); color: var(--white); }
+.step + .ln { width: 36px; height: 2px; background: var(--line); } .step.done + .ln { background: var(--dark); }
+.steps .of { margin-left: auto; font-size: 0.75rem; color: var(--mute); }
+
+.body { flex: 1; display: flex; flex-direction: column; gap: 20px; padding: 28px 48px; }
+.body.center { align-items: center; justify-content: center; text-align: center; }
+h1 { margin: 0; font-size: 1.625rem; font-weight: 700; text-wrap: balance; }
+h1.big { font-size: 2.125rem; }
+.sub { margin: 4px 0 0; color: var(--mute); font-size: 0.9375rem; }
+.ttl { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.row.end { justify-content: flex-end; } .row.between { justify-content: space-between; }
+.cols { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+.cols > * { flex: 1 1 320px; min-width: 0; }
+.card { background: var(--white); border: 1px solid var(--line); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 12px; text-align: left; }
+.card.soft { background: var(--surf); }
+.card h3 { margin: 0; font-size: 1rem; font-weight: 600; }
+.muted { color: var(--mute); }
+.small { font-size: 0.8125rem; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 20px; border-radius: 8px; font-size: 0.9375rem; font-weight: 600; cursor: pointer; border: 1px solid var(--line2); background: var(--white); white-space: nowrap; }
+.btn.p { background: var(--acc); border-color: var(--acc); color: #FFFFFF; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.btn.sm { padding: 6px 12px; font-size: 0.8125rem; }
+.note { display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; background: var(--surf); color: var(--mute); font-size: 0.8125rem; align-self: flex-start; text-align: left; }
+.note.ok { background: var(--ok-soft); color: var(--ok); } .note.warn { background: var(--warn-soft); color: var(--warn); } .note.acc { background: var(--acc-soft); color: var(--acc); }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line2); background: var(--white); font-size: 0.8125rem; cursor: pointer; }
+.chip.on { background: var(--acc-soft); border-color: var(--acc); color: var(--acc); font-weight: 600; }
+.tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 6px; font-size: 0.6875rem; font-weight: 600; }
+.tag.ia { background: var(--acc-soft); color: var(--acc); } .tag.eq { background: var(--ok-soft); color: var(--ok); } .tag.mute { background: var(--surf); color: var(--mute); } .tag.gold { background: var(--gold-soft); color: var(--gold); }
+.lnk { background: none; border: 0; padding: 0; color: var(--acc); font-weight: 500; font-size: 0.8125rem; cursor: pointer; }
+.lnk.w { color: var(--warn); }
+.dots { display: inline-flex; gap: 4px; } .dots i { width: 12px; height: 12px; border-radius: 99px; background: var(--line); } .dots i.f { background: var(--dark); }
+svg.i { width: 20px; height: 20px; flex: none; }
+
+.land { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.zone { border: 1px solid var(--line); border-radius: 16px; padding: 18px 18px 0; display: flex; flex-direction: column; gap: 10px; cursor: pointer; text-align: left; background: var(--z1); overflow: hidden; }
+.zone.z2 { background: var(--z2); } .zone.z3 { background: var(--z3); }
+.zone.sel { border: 2px solid var(--acc); padding: 17px 17px 0; }
+.zone .zh { display: flex; gap: 10px; align-items: center; } .zone .zh b { display: block; font-size: 1.125rem; font-weight: 600; } .zone .zh span { font-size: 0.8125rem; color: var(--mute); }
+.occ { min-height: 110px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; }
+.terr { display: block; width: 100%; height: 90px; }
+.fig { width: 40px; height: 40px; border-radius: 999px; border: 2px solid var(--dark); background: var(--white); display: grid; place-items: center; }
+.you { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--acc); font-size: 0.75rem; font-weight: 600; }
+.you .a { width: 48px; height: 48px; border-radius: 999px; background: var(--acc); border: 3px solid var(--white); display: grid; place-items: center; animation: pop .35s ease-out; }
+@keyframes pop { from { transform: scale(.6); } to { transform: scale(1); } }
+.ghost { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 0.6875rem; color: var(--mute); }
+.ghost .a { width: 44px; height: 44px; border-radius: 999px; border: 1.5px dashed var(--mute); display: grid; place-items: center; }
+
+.mhdr { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; background: var(--white); }
+.mstep { padding: 8px 16px; background: var(--white); border-bottom: 1px solid var(--line); font-size: 0.75rem; font-weight: 600; color: var(--acc); }
+.band { display: flex; align-items: center; gap: 12px; padding: 16px; border-radius: 14px; border: 1px solid var(--line); min-height: 92px; cursor: pointer; text-align: left; width: 100%; }
+.band.sel { border: 2px solid var(--acc); }
+
+.code { padding: 16px 24px; border-radius: 10px; background: var(--surf); font-size: 2.75rem; font-weight: 700; align-self: flex-start; letter-spacing: .02em; }
+.seg { display: flex; gap: 8px; flex-wrap: wrap; } .seg button { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line2); background: var(--white); font-size: 0.8125rem; cursor: pointer; } .seg button.on { background: var(--acc-soft); border-color: var(--acc); color: var(--acc); font-weight: 600; }
+.input { padding: 14px 16px; border-radius: 8px; border: 2px solid var(--warn); font: inherit; font-size: 1.125rem; font-weight: 500; width: 100%; background: var(--white); color: var(--text); }
+textarea.input { border-color: var(--acc); font-size: 0.9375rem; font-weight: 400; line-height: 1.5; min-height: 90px; resize: vertical; }
+.sw { width: 44px; height: 24px; border-radius: 999px; background: var(--line2); border: 0; padding: 3px; display: flex; cursor: pointer; flex: none; }
+.sw::after { content: ""; width: 18px; height: 18px; border-radius: 99px; background: #FFFFFF; }
+.sw[aria-checked="true"] { background: var(--acc); justify-content: flex-end; }
+.opt { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.opt b { display: block; font-weight: 500; font-size: 0.875rem; } .opt span { font-size: 0.75rem; color: var(--mute); }
+.mic { width: 120px; height: 120px; border-radius: 999px; background: var(--acc-soft); display: grid; place-items: center; }
+.mic div { width: 72px; height: 72px; border-radius: 999px; background: var(--acc); display: grid; place-items: center; }
+.wave { display: flex; gap: 4px; align-items: center; height: 44px; } .wave i { width: 5px; border-radius: 3px; background: var(--acc); animation: wv 1s ease-in-out infinite alternate; }
+@keyframes wv { from { transform: scaleY(.5); } to { transform: scaleY(1); } }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: var(--ok-soft); color: var(--ok); font-size: 0.75rem; font-weight: 600; }
+.pill::before { content: ""; width: 8px; height: 8px; border-radius: 99px; background: var(--ok); }
+.quote { padding: 8px 12px; border-radius: 6px; background: var(--surf); font-size: 0.8125rem; }
+.slots { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.slot { width: 34px; height: 34px; border-radius: 999px; border: 1.5px dashed var(--line2); display: grid; place-items: center; }
+.slot.f { background: var(--acc); border: 1.5px solid var(--acc); }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 16px; }
+.act.sel { border: 2px solid var(--acc); padding: 23px; }
+.mission { background: var(--gold-soft); border: 2px solid var(--gold); }
+.snaps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 16px; }
+.bars { display: flex; gap: 6px; align-items: flex-end; } .bars div { display: flex; flex-direction: column; gap: 4px; align-items: center; font-size: 0.6875rem; color: var(--mute); } .bars i { width: 56px; border-radius: 4px; border: 1px solid var(--line2); }
+.drop { padding: 12px; border-radius: 8px; border: 1.5px dashed var(--acc); background: var(--acc-soft); color: var(--acc); text-align: center; font-size: 0.8125rem; }
+.dash { border: 1.5px dashed var(--line2); border-radius: 10px; padding: 12px 14px; display: flex; gap: 8px; align-items: center; color: var(--acc); font-weight: 500; background: transparent; cursor: pointer; }
+.toast { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--dark); color: #FFFFFF; padding: 10px 16px; border-radius: 8px; font-size: 0.8125rem; box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+.help { position: absolute; right: 24px; top: 72px; width: min(340px, calc(100% - 32px)); background: var(--white); border: 1px solid var(--line2); border-radius: 12px; padding: 18px; box-shadow: 0 12px 32px rgba(0,0,0,.14); display: flex; flex-direction: column; gap: 10px; z-index: 5; text-align: left; }
+
+@media (max-width: 760px) {
+  .hdr, .steps { padding-inline: 16px; }
+  .body { padding: 20px 16px; }
+  .land { grid-template-columns: 1fr; }
+  .steps .ln { display: none; }
+  .code { font-size: 2rem; }
+  .app { min-height: 0; }
+}
+</style>
+<style>body { margin: 0; } img { max-width: 100%; } [hidden] { display: none !important; }</style>
+</head>
+<body>
+<div class="sim" role="region" aria-label="Controles de la simulación">
+  <b>Simulación de RetroScape</b>
+  <label for="goto">Pantalla</label>
+  <select id="goto"></select>
+  <span class="sp"></span>
+  <button type="button" id="restart">Reiniciar</button>
+</div>
+<div class="stage"><main class="app" id="app" aria-live="polite"></main></div>
+
+<script>
+const I = {
+  sun: '<circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  cloud: '<path d="M17.5 19H8a5 5 0 1 1 .9-9.9A6 6 0 0 1 20 11.5 3.8 3.8 0 0 1 17.5 19z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+  bolt: '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+  boltf: '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z" fill="currentColor"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2"/>',
+  person: '<circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21a8 8 0 0 1 16 0z" fill="currentColor"/>',
+  help: '<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1 .9-1 1.6V14M12 17.5v.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  gear: '<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  plus: '<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  key: '<circle cx="8" cy="15" r="4" stroke="currentColor" stroke-width="2"/><path d="M11 12l8-8M16 7l2 2M14 9l2 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  alert: '<circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v6M12 16.5v.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
+  check: '<path d="m5 12 5 5L20 7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+  spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8L12 3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+  mic: '<rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" stroke-width="2"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  pen: '<path d="M4 20h4L19 9l-4-4L4 16v4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>',
+  flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>',
+  snow: '<path d="M12 2v20M4.2 7l15.6 10M4.2 17 19.8 7M9 4l3 2 3-2M9 20l3-2 3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
+  speaker: '<path d="M4 9h4l5-4v14l-5-4H4V9z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+};
+const ic = (n, s = 20, c = '') => `<svg class="i" viewBox="0 0 24 24" fill="none" width="${s}" height="${s}" style="width:${s}px;height:${s}px;${c ? 'color:' + c : ''}" aria-hidden="true">${I[n]}</svg>`;
+const TERR = {
+  Cima: '<svg class="terr" viewBox="0 0 320 90" preserveAspectRatio="none" aria-hidden="true"><path d="M0 90 L95 22 L140 55 L205 6 L320 90 Z" fill="#C9CED6"/><path d="M205 6 L222 26 L210 22 L198 30 L188 19 Z" fill="#FFFFFF"/></svg>',
+  Valle: '<svg class="terr" viewBox="0 0 320 90" preserveAspectRatio="none" aria-hidden="true"><path d="M0 18 C 90 20, 110 82, 160 82 C 210 82, 230 20, 320 18 L320 90 L0 90 Z" fill="#BDC3CC"/></svg>',
+  Tormenta: '<svg class="terr" viewBox="0 0 320 90" preserveAspectRatio="none" aria-hidden="true"><path d="M110 46a20 20 0 0 1 8-38 30 30 0 0 1 56 4 20 20 0 0 1 8 34z" fill="#AEB4BD"/><path d="M150 50 l-12 22 h12 l-6 16" stroke="#6B7280" stroke-width="3" fill="none" stroke-linejoin="round"/><path d="M0 90 L320 90 L320 78 Q160 66 0 78 Z" fill="#AEB4BD"/></svg>',
+};
+const ZONES = [['Cima', 'Me fue bien', 'sun', ''], ['Valle', 'Regular', 'cloud', 'z2'], ['Tormenta', 'Me fue mal', 'bolt', 'z3']];
+const COMMENT = 'Esta semana perdimos casi dos días esperando que el entorno de pruebas volviera a funcionar. Creo que deberíamos avisar antes cuando alguien lo modifica.';
+
+const SCREENS = [
+  ['P01', 'Inicio'], ['P02', 'Sala creada'], ['P03', 'Unirse a una sala'], ['P04', 'Recordatorio del sprint anterior'],
+  ['P05', 'Colocación en el paisaje'], ['P06', 'Colocación en celular'], ['P07', 'Revelación'], ['P08', 'Aportar comentario'],
+  ['P09', 'Dictado'], ['P10', 'Vista previa'], ['P11', 'Comentario publicado'], ['P12', 'Borrador del análisis'],
+  ['P13', 'Agrupación manual'], ['P14', 'Votación con fichas'], ['P15', 'Misiones adoptadas'], ['P16', 'Evolución entre sprints'], ['P17', 'Preferencias'],
+];
+const HELP = {
+  P01: 'Si facilitas la retrospectiva, crea una sala. Si eres parte del equipo, únete con el código que te compartieron.',
+  P02: 'Comparte el código. Cuando estén todos (o los que puedan), inicia la retrospectiva.',
+  P03: 'Escribe el código de la sala. No necesitas cuenta.',
+  P04: 'Es un repaso del sprint anterior. Puedes saltarlo.',
+  P05: 'Coloca tu avatar en la zona que describe cómo viviste el sprint. Puedes usar el mouse, el teclado o tocar la zona. Nadie verá tu posición hasta que todos terminen.',
+  P06: 'Toca la franja que describe cómo viviste el sprint.',
+  P07: 'Así quedó el equipo. Las figuras no tienen nombre; si quieres, puedes mostrar el tuyo.',
+  P08: 'Elige si quieres escribir o dictar tu comentario. Siempre podrás revisarlo antes de publicarlo.',
+  P09: 'Habla con naturalidad. Si algo sale mal, puedes repetir, editar o pasar a escribir sin perder lo dictado.',
+  P10: 'Revisa tu comentario. Se publicará sin tu nombre.',
+  P11: 'Tu comentario ya se publicó. La emoción solo se guarda si la confirmas.',
+  P12: 'Revisa lo que propone la IA: puedes renombrar, fusionar o descartar temas y agregar acciones del equipo. Nadie lo ve hasta que lo publiques.',
+  P13: 'Agrupa los comentarios a mano: arrástralos a un tema o crea uno nuevo.',
+  P14: 'Reparte tus 3 fichas entre las acciones que más te importan. Nadie verá los votos hasta el cierre.',
+  P15: 'Estas son las misiones que el equipo adoptó. Las demás ideas quedan guardadas.',
+  P16: 'Muestra cómo ha cambiado el equipo entre sprints, solo con datos agregados.',
+  P17: 'Ajusta la app a tus necesidades. Los cambios se aplican al instante.',
+};
+const st = {
+  zone: 0, reasons: ['Comunicación', 'Logros'], showName: false, mzone: 1, mreason: ['Bloqueos'],
+  emotion: null, open: { 0: true }, extraActions: [], chips: [2, 1, 0, 0], timer: 2, wait: 1,
+  hc: false, focus: true, rm: false, size: 125,
+};
+let cur = 'P01', toastT = null, helpOpen = false;
+
+const app = document.getElementById('app');
+function header(sala = 'Sprint 14 · Equipo Atlas') {
+  return `<header class="hdr"><div class="brand"><div class="logo" aria-hidden="true"></div><strong>RetroScape</strong>${sala ? `<span class="sala">${sala}</span>` : ''}</div>
+  <div class="hacts"><button class="ib" data-help>${ic('help', 18)}¿Qué hago aquí?</button><button class="ib sq" data-go="P17" aria-label="Preferencias">${ic('gear', 18)}</button></div></header>`;
+}
+function steps(a) {
+  const n = ['Colocar', 'Comentar', 'Analizar', 'Votar', 'Misiones'];
+  return `<nav class="steps" aria-label="Pasos de la retrospectiva">${n.map((s, i) => `<div class="step ${i < a ? 'done' : i === a ? 'on' : ''}" ${i === a ? 'aria-current="step"' : ''}><span class="d">${i < a ? '✓' : i + 1}</span>${s}</div>${i < 4 ? '<span class="ln"></span>' : ''}`).join('')}<span class="of">Paso ${a + 1} de 5</span></nav>`;
+}
+const btn = (label, go, p = false, extra = '') => `<button class="btn ${p ? 'p' : ''}" ${go ? `data-go="${go}"` : ''} ${extra}>${label}</button>`;
+const note = (icon, t, cls = '') => `<div class="note ${cls}">${ic(icon, 18)}<span>${t}</span></div>`;
+const fig = () => `<div class="fig" aria-label="Participante anónimo">${ic('person', 22, 'var(--dark)')}</div>`;
+const figs = n => Array.from({ length: n }, fig).join('');
+const you = (label = 'Tú') => `<div class="you"><div class="a">${ic('person', 26, '#FFFFFF')}</div>${label}</div>`;
+const ghost = () => `<div class="ghost"><div class="a">${ic('person', 22, 'var(--line2)')}</div>Tu posición en el Sprint 13 (solo tú la ves)</div>`;
+const dots = (n, of = 6) => `<span class="dots" aria-hidden="true">${Array.from({ length: of }, (_, i) => `<i class="${i < n ? 'f' : ''}"></i>`).join('')}</span>`;
+function land(kids, sel = -1, clickable = false) {
+  return `<div class="land" ${clickable ? 'role="radiogroup" aria-label="Zonas del paisaje"' : ''}>${ZONES.map((z, i) => `<${clickable ? 'button' : 'div'} class="zone ${z[3]} ${sel === i ? 'sel' : ''}" ${clickable ? `role="radio" aria-checked="${sel === i}" data-zone="${i}"` : ''} aria-label="${z[0]}: ${z[1]}">
+    <div class="zh">${ic(z[2], 24, 'var(--dark)')}<div><b>${z[0]}</b><span>${z[1]}</span></div></div>
+    <div class="occ">${kids[i] || ''}</div>${TERR[z[0]]}</${clickable ? 'button' : 'div'}>`).join('')}</div>`;
+}
+const chip = (label, on, attr = '') => `<button class="chip ${on ? 'on' : ''}" aria-pressed="${on}" ${attr}>${on ? ic('check', 14) : ''}${label}</button>`;
+const tag = (t, k) => `<span class="tag ${k}">${k === 'ia' ? ic('spark', 12) : ''}${t}</span>`;
+const ttl = (h, s, right = '') => `<div class="ttl"><div><h1>${h}</h1>${s ? `<p class="sub">${s}</p>` : ''}</div>${right}</div>`;
+const ACTIONS = () => [['Automatizar las pruebas antes de desplegar', 'ia'], ['Avisar en el canal antes de modificar el entorno de pruebas', 'ia'], ['Limitar la planificación a una hora', 'ia'], ['Definir criterios de terminado por historia', 'eq'], ...st.extraActions.map(a => [a, 'eq'])];
+
+const R = {
+  P01: () => `${header('')}<section class="body center" style="gap:28px">
+    <div><h1 class="big">Retrospectivas honestas, sin post-its</h1><p class="sub">Cada persona cuenta cómo vivió el sprint en un paisaje compartido. Nadie queda expuesto.</p></div>
+    <div class="row" style="gap:24px;justify-content:center;align-items:stretch">
+      <div class="card" style="width:min(100%,348px);padding:28px;gap:14px">${ic('plus', 28, 'var(--acc)')}<h3 style="font-size:1.25rem">Crear una sala</h3><p class="muted" style="margin:0;line-height:1.4">Para quien facilita la retrospectiva. Genera un código para compartir con el equipo.</p><div>${btn('Crear sala', 'P02', true)}</div></div>
+      <div class="card" style="width:min(100%,348px);padding:28px;gap:14px">${ic('key', 28)}<h3 style="font-size:1.25rem">Unirme con código</h3><p class="muted" style="margin:0;line-height:1.4">Para miembros del equipo. Solo necesitas el código que te compartió el facilitador.</p><div>${btn('Unirme con código', 'P03')}</div></div>
+    </div>${note('lock', 'No necesitas cuenta. Lo que compartes se publica sin tu nombre.')}</section>`,
+  P02: () => `${header()}<section class="body"><h1>Tu sala está lista</h1>
+    <div class="cols"><div class="card" style="padding:28px;gap:16px;flex:0 1 520px"><span class="muted">Comparte este código con tu equipo</span><div class="code">ATL-482</div><div>${btn('Copiar código', '', false, 'data-copy="ATL-482"')}</div><hr style="border:0;border-top:1px solid var(--line);margin:0;width:100%">
+      <b style="font-weight:500">Tiempo para colocarse (opcional)</b><div class="seg" role="radiogroup" aria-label="Tiempo para colocarse">${['Sin límite', '2 min', '3 min', '5 min'].map((t, i) => `<button role="radio" aria-checked="${st.timer === i}" class="${st.timer === i ? 'on' : ''}" data-timer="${i}">${t}</button>`).join('')}</div></div>
+    <div class="card" style="padding:28px;gap:16px"><span class="muted">Personas conectadas</span><b style="font-size:2rem">5 de 6</b><div class="row" style="gap:10px">${figs(5)}<div class="ghost"><div class="a" style="width:40px;height:40px;border-color:var(--line2)"></div></div></div><p class="muted" style="margin:0">Puedes empezar cuando quieras. Quien llegue después se une en la fase actual.</p></div></div>
+    <div class="row end">${btn('Iniciar retrospectiva', 'P04', true)}</div></section>`,
+  P03: () => `${header('')}<section class="body center"><form class="card" style="width:min(100%,460px);padding:32px;gap:16px" id="join">
+    <h1 style="font-size:1.5rem">Unirme a una sala</h1><label for="code" style="font-weight:500">Código de la sala</label>
+    <input class="input" id="code" value="ATL-428" autocomplete="off" aria-describedby="code-err">
+    <div class="note warn" id="code-err" style="align-self:stretch">${ic('alert', 18)}<span>No encontramos esa sala. Revisa el código (intento 2 de 5).</span></div>
+    <div class="row end">${btn('Volver', 'P01', false, 'type="button"')}<button class="btn p" type="submit">Entrar</button></div></form>
+    ${note('lock', 'Entras sin cuenta. Tras 5 intentos fallidos se bloquea por unos minutos.')}</section>`,
+  P04: () => `${header()}${steps(0)}<section class="body">${ttl('Antes de empezar: así terminó el Sprint 13', 'Un repaso breve para evaluar este sprint con contexto.', '<span class="small muted">Se cierra solo en 10 s</span>')}
+    ${land([figs(2), figs(3), figs(1)])}<b class="muted" style="font-weight:500">2 en cima · 3 en valle · 1 en tormenta</b>
+    <div class="card"><h3>Misiones que adoptamos en esa retrospectiva</h3>${['Reducir la daily a 15 minutos', 'Documentar el API antes de cada entrega'].map(m => `<div class="row" style="gap:10px">${ic('flag', 18, 'var(--dark)')}${m}</div>`).join('')}</div>
+    <div class="row end">${btn('Saltar', 'P05')}${btn('Continuar', 'P05', true)}</div></section>`,
+  P05: () => {
+    const kids = [[], [], []]; kids[st.zone].push(you()); if (st.zone !== 1) kids[1].push(ghost()); else kids[1].unshift(ghost());
+    const all = ['Carga de trabajo', 'Comunicación', 'Bloqueos', 'Logros', 'Herramientas', 'Otro'];
+    return `${header()}${steps(0)}<section class="body">${ttl('¿Cómo viviste el Sprint 14?', 'Arrastra tu avatar a una zona o elígela con el teclado. Nadie verá dónde estás hasta que todos terminen.')}
+    ${land(kids.map(k => k.join('')), st.zone, true)}${note('check', `Tu avatar está en ${['la Cima', 'el Valle', 'la Tormenta'][st.zone]}`, 'ok')}
+    <div style="display:flex;flex-direction:column;gap:10px"><b style="font-weight:500">¿Por qué? (opcional, hasta 2)</b><div class="row" style="gap:8px">${all.map(r => chip(r, st.reasons.includes(r), `data-reason="${r}"`)).join('')}</div></div>
+    <div class="row between"><div class="row" style="gap:10px">${dots(4)}<b style="font-weight:500">4 de 6 listos</b><span class="small muted">· las posiciones siguen ocultas</span></div><div class="row">${btn('Adelantar mi comentario', 'P08')}${btn('Listo', 'P07', true)}</div></div></section>`;
+  },
+  P06: () => `<div class="mhdr"><div class="brand"><div class="logo" style="width:22px;height:22px;border-radius:6px"></div><strong style="font-size:1rem">RetroScape</strong></div><button class="lnk" data-help>¿Qué hago aquí?</button></div>
+    <div class="mstep">Paso 1 de 5 · Colocar</div><section class="body" style="padding:16px;gap:12px"><h1 style="font-size:1.25rem">¿Cómo viviste el sprint?</h1><span class="small muted">Toca la franja que mejor lo describe.</span>
+    <div role="radiogroup" aria-label="Zonas" style="display:flex;flex-direction:column;gap:12px">${ZONES.map((z, i) => `<button class="band ${st.mzone === i ? 'sel' : ''}" role="radio" aria-checked="${st.mzone === i}" data-mzone="${i}" style="background:var(--${['z1', 'z2', 'z3'][i]})">${ic(z[2], 26, 'var(--dark)')}<span style="flex:1"><b style="display:block;font-size:1.0625rem;font-weight:600">${z[0]}</b><span class="small muted">${z[1]}</span></span>${st.mzone === i ? `<span class="you"><span class="a" style="width:40px;height:40px;border:0">${ic('person', 22, '#FFFFFF')}</span></span>` : ''}</button>`).join('')}</div>
+    ${note('check', `Tu avatar está en ${['la Cima', 'el Valle', 'la Tormenta'][st.mzone]}`, 'ok')}<b style="font-weight:500" class="small">¿Por qué? (opcional)</b>
+    <div class="row" style="gap:6px">${['Bloqueos', 'Comunicación', 'Carga de trabajo', 'Otro'].map(r => chip(r, st.mreason.includes(r), `data-mreason="${r}"`)).join('')}</div>
+    <div style="flex:1"></div>${btn('Listo', 'P07', true, 'style="width:100%"')}<span class="small muted" style="text-align:center">4 de 6 listos · posiciones ocultas</span></section>`,
+  P07: () => `${header()}${steps(0)}<section class="body">${ttl('El clima del equipo: parcialmente nublado', 'Todos se colocaron. Las figuras no muestran nombres.', `<div class="row" style="gap:10px"><label for="showname" style="font-weight:500">Mostrar mi nombre</label><button class="sw" id="showname" role="switch" aria-checked="${st.showName}" data-toggle="showName"></button></div>`)}
+    ${land([you(st.showName ? 'Isaac (tú)' : 'Tú') + fig(), figs(3), figs(1)])}
+    <div class="card"><div class="row between"><h3>Resumen</h3><button class="ib" data-say="2 en cima, 3 en valle y 1 en tormenta. Razones más marcadas: Bloqueos, 3, y Comunicación, 2.">${ic('speaker', 16)}Escuchar</button></div><p style="margin:0;font-size:.9375rem">2 en cima, 3 en valle y 1 en tormenta. Razones más marcadas: Bloqueos (3) y Comunicación (2).</p></div>
+    <div class="row between">${note('lock', 'Esta foto anónima se guarda en la evolución del equipo.')}${btn('Continuar a comentarios', 'P08', true)}</div></section>`,
+  P08: () => `${header()}${steps(1)}<section class="body">${ttl('Cuéntanos qué pasó en el sprint', 'Elige cómo prefieres hacerlo. Podrás revisar todo antes de publicar.')}
+    <div class="cols">${[['pen', 'Escribir', 'A tu ritmo y con tus propias palabras.', 'P10', false], ['mic', 'Dictar', 'Habla con naturalidad y luego revisa la transcripción.', 'P09', true]].map(([i, t, d, go, p]) => `<div class="card" style="padding:28px;gap:14px"><div style="width:52px;height:52px;border-radius:12px;display:grid;place-items:center;background:var(--${p ? 'acc-soft' : 'surf'})">${ic(i, 26, p ? 'var(--acc)' : '')}</div><h3 style="font-size:1.25rem">${t}</h3><p class="muted" style="margin:0">${d}</p><div>${btn(t, go, p)}</div></div>`).join('')}</div>
+    ${note('lock', 'Tu comentario se publica sin tu nombre. El audio no se guarda: solo el texto que confirmes.')}<span class="small muted">Has publicado 0 comentarios en esta retrospectiva.</span></section>`,
+  P09: () => `${header()}${steps(1)}<section class="body">${ttl('Dicta tu comentario', 'Cuando termines, podrás corregir el texto.')}
+    <div class="cols"><div class="card" style="flex:0 1 360px;align-items:center;padding:28px;gap:16px"><span class="pill">Escuchando… 0:21</span><div class="mic"><div>${ic('mic', 32, '#FFFFFF')}</div></div><div class="wave" aria-hidden="true">${[10, 22, 34, 18, 40, 26, 14, 30, 20, 12].map((h, i) => `<i style="height:${h}px;animation-delay:${i * 80}ms"></i>`).join('')}</div>${btn('Terminar dictado', 'P10')}</div>
+    <div class="card"><div class="row between"><h3>Transcripción (editable)</h3><span class="small muted">Borrador sin publicar</span></div><label for="tx" class="small muted" hidden>Transcripción</label><textarea class="input" id="tx">${COMMENT}</textarea>
+      <div class="card" style="background:var(--warn-soft);border-color:var(--warn);padding:14px 16px;gap:10px"><div class="row" style="gap:8px;color:var(--warn);font-weight:500" role="status">${ic('alert', 18)}No entendimos la última frase. Lo que ya dictaste se conserva.</div><div class="row" style="gap:8px">${chip('Repetir la última frase', false, 'data-toast="Repite la última frase cuando quieras."')}${chip('Editar el texto', false, 'data-focus="tx"')}${chip('Seguir escribiendo', false, 'data-go="P10"')}</div></div></div></div>
+    <div class="row end">${btn('Cambiar a escritura', 'P10')}${btn('Revisar', 'P10', true)}</div>${note('lock', 'Tu voz no se guarda. Solo procesamos el texto, sin tu nombre.')}</section>`,
+  P10: () => `${header()}${steps(1)}<section class="body">${ttl('Así se verá tu comentario', 'Revísalo antes de publicarlo.')}
+    <div class="card" style="padding:28px;gap:14px"><div class="row" style="gap:10px"><span style="width:36px;height:36px;border-radius:99px;background:var(--surf);display:grid;place-items:center">${ic('person', 20, 'var(--mute)')}</span><b>Anónimo</b><span class="small muted">· ahora</span></div><p style="margin:0;font-size:1.0625rem;line-height:1.5">${COMMENT}</p></div>
+    <div class="card" style="flex-direction:row;align-items:center;background:var(--acc-soft);border-color:var(--acc);padding:16px 18px">${ic('lock', 24, 'var(--acc)')}<div><b style="color:var(--acc)">Se publicará de forma anónima</b><p style="margin:4px 0 0" class="small">Nadie, ni siquiera el facilitador, verá quién lo escribió. El texto se usará para el análisis del equipo.</p></div></div>
+    <div class="row end">${btn('Cancelar', 'P08')}${btn('Volver a dictar', 'P09')}${btn('Editar', 'P09')}${btn('Publicar', 'P11', true)}</div></section>`,
+  P11: () => `${header()}${steps(1)}<section class="body"><div class="row" style="gap:12px"><span style="width:40px;height:40px;border-radius:99px;background:var(--ok);display:grid;place-items:center">${ic('check', 24, '#FFFFFF')}</span><div><h1>Publicado</h1><p class="sub" style="margin:0">Tu comentario ya está en la retrospectiva, sin tu nombre.</p></div></div>
+    <div class="card"><div class="row" style="gap:8px">${ic('spark', 20, 'var(--acc)')}<h3>Parece que este comentario expresa frustración. ¿Es correcto?</h3></div><p class="small muted" style="margin:0">Solo se guarda en tu perfil si lo confirmas o lo corriges. Sirve para que la app se adapte a ti; nadie más lo ve.</p>
+      <div class="row" style="gap:8px">${['Sí, es frustración', 'Es otra emoción ▾', 'Prefiero no guardarla'].map(e => chip(e, st.emotion === e, `data-emotion="${e}"`)).join('')}</div>${st.emotion ? note('check', st.emotion === 'Prefiero no guardarla' ? 'No se guardó ninguna emoción.' : 'Guardado en tu perfil.', 'ok') : ''}</div>
+    <div class="card soft" style="flex-direction:row;align-items:center">${dots(5)}<span>5 de 6 ya comentaron. El facilitador cerrará la fase cuando el equipo esté listo.</span></div>
+    <div class="row between"><button class="lnk" data-go="P12">Ver como facilitador: cerrar comentarios y analizar →</button>${btn('Escribir otro comentario', 'P08')}</div></section>`,
+  P12: () => `${header()}${steps(2)}<section class="body" style="gap:16px">${ttl('Borrador del análisis', 'Revisa y ajusta los temas antes de mostrarlos al equipo.', note('lock', 'Solo tú lo ves hasta publicarlo', 'acc'))}
+    <div class="cols" style="gap:20px"><div style="display:flex;flex-direction:column;gap:12px"><b>Temas (6 comentarios)</b>
+      ${[['Bloqueos con el entorno de pruebas', 3, ['“Perdimos casi dos días esperando que el entorno de pruebas volviera a funcionar.”', '“Nadie avisó que se cambió la configuración del servidor de pruebas.”', '“Los despliegues fallaron tres veces por el mismo problema.”']], ['Comunicación entre equipos', 2, ['“Nos enteramos tarde de los cambios del equipo de backend.”', '“Faltó coordinar las fechas de la demo.”']], ['Reuniones largas', 1, ['“Las reuniones de planificación se alargan más de una hora.”']]].map(([t, n, qs], i) => `<div class="card" style="padding:16px 18px;gap:10px"><div class="row between"><b>${t}</b>${tag(`Sugerido por IA · ${n} comentario${n > 1 ? 's' : ''}`, 'ia')}</div>${st.open[i] ? qs.map(q => `<div class="quote">${q}</div>`).join('') : ''}<div class="row" style="gap:16px"><button class="lnk" data-open="${i}" aria-expanded="${!!st.open[i]}">${st.open[i] ? 'Ocultar comentarios' : 'Ver comentarios'}</button><button class="lnk" data-toast="Escribe el nuevo nombre del tema.">Renombrar</button><button class="lnk" data-toast="Elige el tema con el que quieres fusionarlo.">Fusionar</button><button class="lnk w" data-toast="El tema se descartó del borrador.">Descartar</button></div></div>`).join('')}
+      <button class="lnk" data-go="P13" style="align-self:flex-start">Ver qué pasa si el análisis automático no responde →</button></div>
+    <div style="display:flex;flex-direction:column;gap:12px;flex:0 1 470px"><b>Acciones propuestas</b>${ACTIONS().map(([t, k]) => `<div class="card" style="padding:12px 14px;gap:8px"><span style="font-weight:500">${t}</span><div class="row">${tag(k === 'ia' ? 'Sugerida por IA' : 'Propuesta del equipo', k)}<button class="lnk" data-toast="Edita el texto de la acción.">Editar</button><button class="lnk w" data-toast="La acción se quitó del borrador.">Quitar</button></div></div>`).join('')}
+      <form id="addact" class="row" style="gap:8px"><label for="newact" hidden>Nueva acción</label><input id="newact" class="input" style="border:1.5px dashed var(--line2);font-size:.875rem;padding:12px 14px;flex:1;min-width:0" placeholder="Agregar acción del equipo"><button class="btn sm" type="submit">${ic('plus', 16, 'var(--acc)')}Agregar</button></form>
+      <div class="row end">${btn('Publicar al equipo', 'P14', true)}</div></div></div></section>`,
+  P13: () => `${header()}${steps(2)}<section class="body" style="gap:16px">${ttl('Agrupación manual', 'Arrastra cada comentario al tema que corresponda o crea uno nuevo.')}
+    <div class="card" style="flex-direction:row;align-items:center;flex-wrap:wrap;background:var(--warn-soft);border-color:var(--warn);padding:14px 16px;color:var(--warn)" role="alert">${ic('alert', 20)}<span style="flex:1;min-width:200px">El análisis automático no respondió. Puedes reintentar o agrupar tú mismo; nada se marcará como sugerido por IA.</span>${btn('Reintentar', 'P12')}</div>
+    <div class="cols" style="gap:20px"><div class="card soft" style="flex:0 1 520px;padding:18px;gap:10px"><b>Sin tema (3)</b>${['Las reuniones de planificación se alargan más de una hora.', 'Nadie avisó que se cambió la configuración del servidor de pruebas.', 'Me gustó trabajar en pareja con diseño esta semana.'].map(q => `<div class="card" style="padding:12px 14px" draggable="true">${q}</div>`).join('')}</div>
+      <div style="display:flex;flex-direction:column;gap:12px"><div class="card" style="padding:16px 18px;gap:10px"><div class="row between"><b>Entorno de pruebas</b>${tag('2 comentarios', 'mute')}</div><div class="drop">Suelta aquí un comentario</div><div class="input" style="border:1px solid var(--line2);font-size:.8125rem;font-weight:400;padding:10px 12px">Acción: Avisar antes de modificar el entorno de pruebas</div></div><button class="dash" data-toast="Escribe el nombre del nuevo tema.">${ic('plus', 18)}Nuevo tema</button></div></div>
+    <div class="row between"><span class="small muted">Los comentarios que queden sin tema se publicarán en «Otros».</span>${btn('Publicar al equipo', 'P14', true)}</div></section>`,
+  P14: () => {
+    const left = 3 - st.chips.reduce((a, b) => a + b, 0);
+    return `${header()}${steps(3)}<section class="body" style="gap:16px">${ttl('Reparte tus 3 fichas de energía', 'Ponlas todas en una acción o repártelas. Nadie verá los votos hasta que todos terminen.', `<div class="row" style="gap:10px">${dots(4)}<b style="font-weight:500">4 de 6 ya votaron</b></div>`)}
+    <div class="grid2">${ACTIONS().slice(0, 4).map(([t, k], i) => `<div class="card act ${st.chips[i] ? 'sel' : ''}" style="gap:12px"><b style="font-size:1rem">${t}</b><div>${tag(k === 'ia' ? 'Sugerida por IA' : 'Propuesta del equipo', k)}</div><div class="slots" aria-label="${st.chips[i]} fichas asignadas">${[0, 1, 2].map(j => `<span class="slot ${j < st.chips[i] ? 'f' : ''}">${j < st.chips[i] ? ic('boltf', 16, '#FFFFFF') : ''}</span>`).join('')}<button class="btn sm" data-chip="${i}" data-d="-1" aria-label="Quitar ficha" ${st.chips[i] ? '' : 'disabled'}>−</button><button class="btn sm" data-chip="${i}" data-d="1" aria-label="Agregar ficha" ${left ? '' : 'disabled'}>+</button></div></div>`).join('')}</div>
+    <div class="card" style="flex-direction:row;justify-content:space-between;align-items:center;flex-wrap:wrap;padding:14px 18px"><div class="row" style="gap:10px">${ic('boltf', 20, 'var(--acc)')}<b>Te quedan ${left} ficha${left === 1 ? '' : 's'}</b><span class="small muted">· ${left ? 'asígnalas para confirmar' : 'puedes retirar una para moverla'}</span></div>${btn('Confirmar mi voto', 'P15', true, left ? 'disabled' : '')}</div></section>`;
+  },
+  P15: () => `${header()}${steps(4)}<section class="body" style="gap:16px">${ttl('Misiones para el Sprint 15', '6 de 6 votaron · 18 fichas repartidas', `<button class="ib" data-say="Misión 1: automatizar las pruebas antes de desplegar, 8 fichas. Misión 2: avisar en el canal antes de modificar el entorno de pruebas, 5 fichas.">${ic('speaker', 16)}Escuchar resumen</button>`)}
+    <div class="cols" style="gap:20px"><div style="display:flex;flex-direction:column;gap:14px">${[['Automatizar las pruebas antes de desplegar', 8, true], ['Avisar en el canal antes de modificar el entorno de pruebas', 5, false]].map(([t, n, big], i) => `<div class="card ${big ? 'mission' : ''}" style="padding:${big ? '26px' : '20px 22px'}"><div class="row" style="gap:10px;color:var(--gold)">${ic('flag', big ? 26 : 20)}<b class="small">Misión ${i + 1}</b></div><b style="font-size:${big ? '1.375rem' : '1.0625rem'}">${t}</b><div class="row" style="gap:4px;color:var(--gold)">${Array.from({ length: n }, () => ic('boltf', 16)).join('')}<span class="small" style="margin-left:8px;font-weight:500">${n} fichas</span></div></div>`).join('')}</div>
+    <div class="card soft" style="flex:0 1 400px;padding:20px;gap:10px"><div class="row" style="gap:8px">${ic('snow', 20, 'var(--mute)')}<b>Valle de ideas congeladas</b></div><p class="small muted" style="margin:0">No se adoptaron esta vez. Se guardan para proponerlas en otro sprint.</p>${[['Limitar la planificación a una hora', 3], ['Definir criterios de terminado por historia', 2]].map(([t, n]) => `<div class="card" style="padding:12px 14px;gap:4px"><span class="muted" style="font-weight:500">${t}</span><span class="small muted">${n} fichas</span></div>`).join('')}</div></div>
+    <div class="row between">${note('lock', 'Los votos individuales no se muestran: solo los totales.')}${btn('Registrar misiones en el sprint', 'P16', true)}</div></section>`,
+  P16: () => `${header('Equipo Atlas')}<section class="body" style="gap:18px">${ttl('Evolución del equipo Atlas', 'Vista para Product Owner y Agile Coach: solo datos agregados, sin comentarios identificables.')}
+    <div class="snaps">${[['Sprint 11', [1, 2, 3]], ['Sprint 12', [1, 3, 2]], ['Sprint 13', [2, 3, 1]], ['Sprint 14', [2, 3, 1]]].map(([s, v]) => `<div class="card" style="padding:16px;gap:10px"><b>${s}</b><div class="bars">${['Cima', 'Valle', 'Tormenta'].map((z, i) => `<div><i style="height:${18 + v[i] * 22}px;background:var(--z${i + 1})"></i>${z} ${v[i]}</div>`).join('')}</div></div>`).join('')}</div>
+    <div class="cols" style="gap:20px"><div class="card" style="padding:20px;gap:10px"><h3>Temas recurrentes</h3>${[['Bloqueos con el entorno de pruebas', '3 sprints seguidos'], ['Comunicación entre equipos', '2 de los últimos 4 sprints'], ['Reuniones largas', '2 de los últimos 4 sprints']].map(([t, d]) => `<div class="row between"><span>${t}</span>${tag(d, 'mute')}</div>`).join('')}</div>
+    <div class="card" style="padding:20px;gap:10px"><h3>Misiones por sprint</h3>${[['Retro 14', 'Automatizar las pruebas antes de desplegar (8)'], ['Retro 14', 'Avisar antes de modificar el entorno de pruebas (5)'], ['Retro 13', 'Reducir la daily a 15 minutos (6)']].map(([s, m]) => `<div class="row" style="gap:10px">${tag(s, 'gold')}<span class="small">${m}</span></div>`).join('')}</div></div>
+    <div class="row end">${btn('Salir', 'P01')}</div></section>`,
+  P17: () => `${header('')}<section class="body">${ttl('Preferencias', 'Se guardan en este dispositivo, sin cuenta, y se aplican al instante.')}
+    <div class="cols"><div class="card" style="flex:0 1 540px;gap:18px"><h3>Visualización</h3>${[['hc', 'Alto contraste', 'Aumenta el contraste de textos y bordes'], ['focus', 'Modo enfoque', 'Muestra una tarea a la vez y pausa animaciones'], ['rm', 'Reducir animaciones', 'Reemplaza las animaciones por mensajes de texto']].map(([k, l, d]) => `<div class="opt"><div><b id="lbl-${k}">${l}</b><span>${d}</span></div><button class="sw" role="switch" aria-labelledby="lbl-${k}" aria-checked="${st[k]}" data-toggle="${k}"></button></div>`).join('')}
+      <label for="size" style="font-weight:500">Tamaño de texto</label><div class="row"><span class="small">A</span><input type="range" id="size" min="100" max="150" step="25" value="${st.size}" style="flex:1"><b style="font-size:1.25rem">A</b><span class="small muted">${st.size} %</span></div></div>
+    <div class="card"><h3>Voz y dictado</h3><b style="font-weight:500">Tiempo de espera antes de cortar el dictado</b><div class="seg" role="radiogroup" aria-label="Tiempo de espera">${['1,5 s', '3 s', '5 s'].map((t, i) => `<button role="radio" aria-checked="${st.wait === i}" class="${st.wait === i ? 'on' : ''}" data-wait="${i}">${t}</button>`).join('')}</div>
+      ${st.wait !== 2 ? `<div class="card" style="background:var(--acc-soft);border-color:var(--acc);padding:16px;gap:10px"><div class="row" style="gap:8px;color:var(--acc)">${ic('spark', 18)}<b class="small">Sugerencia según tu uso</b></div><p class="small" style="margin:0;line-height:1.4">Corregiste varias transcripciones en las últimas sesiones. ¿Ampliamos el tiempo de espera a 5 s?</p><div class="row" style="gap:8px"><button class="btn p" data-wait="2">Aplicar</button><button class="btn" data-toast="Puedes cambiarlo cuando quieras.">Ahora no</button></div></div>` : note('check', 'Tiempo de espera ajustado a 5 s.', 'ok')}</div></div>
+    <div class="row end">${btn('Guardar', 'back', true)}</div></section>`,
+};
+
+let prev = 'P01';
+function go(id) {
+  if (id === 'back') id = prev && prev !== 'P17' ? prev : 'P01';
+  if (!R[id]) id = 'P01';
+  if (id !== cur) prev = cur;
+  cur = id; helpOpen = false; render();
+  try { history.replaceState(null, '', '#' + id); } catch (e) {}
+  const sel = document.getElementById('goto'); if (sel) sel.value = id;
+  window.scrollTo(0, 0);
+}
+function render() {
+  app.className = 'app' + (cur === 'P06' ? ' mobile' : '');
+  app.innerHTML = R[cur]() + (helpOpen ? `<div class="help" role="dialog" aria-label="Ayuda"><b>¿Qué hago aquí?</b><p style="margin:0;line-height:1.45">${HELP[cur]}</p><div class="row end"><button class="btn sm" data-help>Entendido</button></div></div>` : '');
+  const doc = document.documentElement;
+  doc.classList.toggle('hc', st.hc); doc.classList.toggle('rm', st.rm);
+  doc.style.setProperty('--base', (16 * st.size / 125) + 'px');
+}
+function toast(t) {
+  const old = app.querySelector('.toast'); if (old) old.remove();
+  const d = document.createElement('div'); d.className = 'toast'; d.setAttribute('role', 'status'); d.textContent = t; app.appendChild(d);
+  clearTimeout(toastT); toastT = setTimeout(() => d.remove(), 2400);
+}
+function say(t) {
+  try { const u = new SpeechSynthesisUtterance(t); u.lang = 'es-PE'; speechSynthesis.cancel(); speechSynthesis.speak(u); toast('Leyendo en voz alta…'); }
+  catch (e) { toast('No se pudo reproducir. El texto sigue disponible en pantalla.'); }
+}
+app.addEventListener('click', e => {
+  const b = e.target.closest('button, [data-go]'); if (!b || b.disabled) return;
+  const d = b.dataset;
+  if (d.help !== undefined) { helpOpen = !helpOpen; render(); return; }
+  if (d.zone !== undefined) { st.zone = +d.zone; render(); return; }
+  if (d.mzone !== undefined) { st.mzone = +d.mzone; render(); return; }
+  if (d.reason) { const r = d.reason; if (st.reasons.includes(r)) st.reasons = st.reasons.filter(x => x !== r); else if (st.reasons.length < 2) st.reasons.push(r); else { toast('Puedes marcar hasta 2 razones. Quita una para elegir otra.'); return; } render(); return; }
+  if (d.mreason) { const r = d.mreason; if (st.mreason.includes(r)) st.mreason = st.mreason.filter(x => x !== r); else if (st.mreason.length < 2) st.mreason.push(r); else { toast('Puedes marcar hasta 2 razones.'); return; } render(); return; }
+  if (d.toggle) { st[d.toggle] = !st[d.toggle]; render(); return; }
+  if (d.timer) { st.timer = +d.timer; render(); return; }
+  if (d.wait) { st.wait = +d.wait; render(); return; }
+  if (d.emotion) { st.emotion = d.emotion; render(); return; }
+  if (d.open !== undefined) { st.open[d.open] = !st.open[d.open]; render(); return; }
+  if (d.chip !== undefined) { const i = +d.chip, dd = +d.d, used = st.chips.reduce((a, c) => a + c, 0); if (dd > 0 && used >= 3) { toast('Ya usaste tus 3 fichas. Retira una para moverla.'); return; } st.chips[i] = Math.max(0, st.chips[i] + dd); render(); return; }
+  if (d.copy) { const v = d.copy; Promise.resolve().then(() => navigator.clipboard.writeText(v)).then(() => toast('Código copiado'), () => toast('Copia el código: ' + v)); return; }
+  if (d.say) { say(d.say); return; }
+  if (d.focus) { const el = document.getElementById(d.focus); if (el) el.focus(); return; }
+  if (d.toast) { toast(d.toast); return; }
+  if (d.go) { go(d.go); }
+});
+app.addEventListener('submit', e => {
+  e.preventDefault();
+  if (e.target.id === 'join') go('P04');
+  if (e.target.id === 'addact') { const v = document.getElementById('newact').value.trim(); if (!v) { toast('Escribe la acción antes de agregarla.'); return; } st.extraActions.push(v); render(); toast('Acción agregada como «Propuesta del equipo».'); }
+});
+app.addEventListener('input', e => { if (e.target.id === 'size') { st.size = +e.target.value; render(); document.getElementById('size').focus(); } });
+const sel = document.getElementById('goto');
+sel.innerHTML = SCREENS.map(([id, n]) => `<option value="${id}">${id} · ${n}</option>`).join('');
+sel.addEventListener('change', () => go(sel.value));
+document.getElementById('restart').addEventListener('click', () => { location.hash = ''; location.reload(); });
+const params = new URLSearchParams(location.search);
+if (params.has('shot')) document.documentElement.classList.add('shot');
+const h = (location.hash || '').slice(1);
+go(R[h] ? h : 'P01');
+</script>
+<script>
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>

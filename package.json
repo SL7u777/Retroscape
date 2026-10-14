@@ -1,0 +1,13 @@
+{
+  "name": "retroscape",
+  "version": "0.1.0",
+  "description": "PWA para retrospectivas ágiles con paisaje emocional compartido, comentarios anónimos por voz o texto y análisis con LLM.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node scripts/servidor.js"
+  }
+}
